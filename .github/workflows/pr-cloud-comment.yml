@@ -1,7 +1,13 @@
 name: PR cloud build comment
 on:
-  pull_request:
+  pull_request_target:
     types: [opened]
+    branches:
+      - master
+      - '*-maintenance'
+
+permissions:
+  pull-requests: write
 
 jobs:
   comment-pr:

@@ -30,6 +30,8 @@
 
 #include "platform.h"
 
+#include "build/debug.h"
+
 #ifdef USE_UART
 
 #include "build/build_config.h"
@@ -91,7 +93,7 @@ void uartReconfigure(uartPort_t *uartPort)
     //init
     usart_init(uartPort->USARTx,
                uartPort->port.baudRate,
-              (uartPort->port.options & SERIAL_PARITY_EVEN)? USART_DATA_9BITS:USART_DATA_8BITS,
+               USART_DATA_8BITS,
               (uartPort->port.options & SERIAL_STOPBITS_2) ? USART_STOP_2_BIT : USART_STOP_1_BIT);
 
     //set parity
@@ -194,7 +196,7 @@ bool checkUsartTxOutput(uartPort_t *s)
 
             // Enable USART TX output
             uart->txPinState = TX_PIN_ACTIVE;
-            IOConfigGPIOAF(txIO, IOCFG_AF_PP, uart->hardware->af);
+            IOConfigGPIOAF(txIO, IOCFG_AF_PP, uart->tx.af);
             return true;
         } else {
             // TX line is pulled low so don't enable USART TX
@@ -208,11 +210,14 @@ bool checkUsartTxOutput(uartPort_t *s)
 void uartTxMonitor(uartPort_t *s)
 {
     uartDevice_t *uart = container_of(s, uartDevice_t, port);
-    IO_t txIO = IOGetByTag(uart->tx.pin);
 
-    // Switch TX to an input with pullup so it's state can be monitored
-    uart->txPinState = TX_PIN_MONITOR;
-    IOConfigGPIO(txIO, IOCFG_IPU);
+    if (uart->txPinState == TX_PIN_ACTIVE) {
+        IO_t txIO = IOGetByTag(uart->tx.pin);
+
+        // Switch TX to an input with pullup so it's state can be monitored
+        uart->txPinState = TX_PIN_MONITOR;
+        IOConfigGPIO(txIO, IOCFG_IPU);
+    }
 }
 
 #ifdef USE_DMA
@@ -261,11 +266,9 @@ void uartTryStartTxDMA(uartPort_t *s)
 
 static void handleUsartTxDma(uartPort_t *s)
 {
-    uartDevice_t *uart = container_of(s, uartDevice_t, port);
-
     uartTryStartTxDMA(s);
 
-    if (s->txDMAEmpty && (uart->txPinState != TX_PIN_IGNORE)) {
+    if (s->txDMAEmpty) {
         // Switch TX to an input with pullup so it's state can be monitored
         uartTxMonitor(s);
     }

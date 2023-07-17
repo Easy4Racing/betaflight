@@ -70,7 +70,7 @@ bool cliMode = false;
 #include "drivers/dshot_command.h"
 #include "drivers/dshot_dpwm.h"
 #include "drivers/pwm_output_dshot_shared.h"
-#include "drivers/camera_control.h"
+#include "drivers/camera_control_impl.h"
 #include "drivers/compass/compass.h"
 #include "drivers/display.h"
 #include "drivers/dma.h"
@@ -4728,14 +4728,13 @@ static void cliStatus(const char *cmdName, char *cmdline)
     cliPrintLinef("OSD: %s (%u x %u)", lookupTableOsdDisplayPortDevice[displayPortDeviceType], osdDisplayPort->cols, osdDisplayPort->rows);
 #endif
 
-#ifdef BUILD_KEY
+if (buildKey) {
     cliPrintf("BUILD KEY: %s", buildKey);
-#ifdef RELEASE_NAME
-    cliPrintf(" (%s)", STR(RELEASE_NAME));
-#endif
+    if (releaseName) {
+        cliPrintf(" (%s)", releaseName);
+    }
     cliPrintLinefeed();
-#endif
-
+}
     // Uptime and wall clock
 
     cliPrintf("System Uptime: %d seconds", millis() / 1000);
@@ -5027,6 +5026,10 @@ const cliResourceValue_t resourceTable[] = {
 #endif
 #ifdef USE_INVERTER
     DEFA( OWNER_INVERTER,      PG_SERIAL_PIN_CONFIG, serialPinConfig_t, ioTagInverter[0], SERIAL_PORT_MAX_INDEX ),
+#endif
+#if defined(USE_SOFTSERIAL)
+    DEFA( OWNER_SOFTSERIAL_TX,     PG_SOFTSERIAL_PIN_CONFIG, softSerialPinConfig_t, ioTagTx[0], SOFTSERIAL_COUNT ),
+    DEFA( OWNER_SOFTSERIAL_RX,     PG_SOFTSERIAL_PIN_CONFIG, softSerialPinConfig_t, ioTagRx[0], SOFTSERIAL_COUNT ),
 #endif
 #ifdef USE_I2C
     DEFW( OWNER_I2C_SCL,       PG_I2C_CONFIG, i2cConfig_t, ioTagScl, I2CDEV_COUNT ),
